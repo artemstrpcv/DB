@@ -1,3 +1,6 @@
+CREATE SEQUENCE clientsCT START 1;
+CREATE SEQUENCE casesCT START 1;
+
 CREATE TABLE bank_accounts(
                               PRIMARY KEY (bank_account_id),
                               bank_account_id INT UNIQUE NOT NULL CHECK ( bank_account_id >= 0 ),
@@ -6,7 +9,7 @@ CREATE TABLE bank_accounts(
 
 CREATE TABLE firms(
                       PRIMARY KEY (firm_id),
-                      FOREIGN KEY (firm_bank_account_id) REFERENCES bank_accounts(bank_account_id),
+                      FOREIGN KEY (firm_bank_account_id) REFERENCES bank_accounts(bank_account_id)  ON DELETE NO ACTION,
                       firm_id INT UNIQUE NOT NULL CHECK ( firm_id >= 0 ),
                       firm_name VARCHAR(100) NOT NULL,
                       firm_address VARCHAR(100) NOT NULL,
@@ -17,7 +20,7 @@ CREATE TABLE firms(
 
 CREATE TABLE lawyers(
                         PRIMARY KEY (lawyer_id),
-                        FOREIGN KEY (lawyer_firm_id) REFERENCES firms(firm_id),
+                        FOREIGN KEY (lawyer_firm_id) REFERENCES firms(firm_id) ON DELETE NO ACTION,
                         lawyer_id INT UNIQUE NOT NULL CHECK ( lawyer_id >= 0 ),
                         lawyer_name VARCHAR(100) NOT NULL,
                         lawyer_age INT NOT NULL CHECK ( lawyer_age >= 18 ),
@@ -33,8 +36,9 @@ CREATE TABLE clients(
 
 CREATE TABLE cases(
                       PRIMARY KEY (case_id),
-                      FOREIGN KEY (case_lawyer_id) REFERENCES lawyers(lawyer_id),
+                      FOREIGN KEY (case_lawyer_id) REFERENCES lawyers(lawyer_id)  ON DELETE NO ACTION,
                       case_id INT UNIQUE NOT NULL CHECK ( case_id >= 0 ),
+                      case_name VARCHAR(100) NOT NULL,
                       case_lawyer_id INT NOT NULL,
                       case_cost INT NOT NULL,
                       case_status BOOLEAN NOT NULL
@@ -42,9 +46,9 @@ CREATE TABLE cases(
 
 CREATE TABLE transactions(
                              PRIMARY KEY (transaction_id),
-                             FOREIGN KEY (bank_account_id) REFERENCES bank_accounts(bank_account_id),
-                             FOREIGN KEY (client_id) REFERENCES clients(client_id),
-                             FOREIGN KEY (case_id) REFERENCES cases(case_id),
+                             FOREIGN KEY (bank_account_id) REFERENCES bank_accounts(bank_account_id)  ON DELETE NO ACTION,
+                             FOREIGN KEY (client_id) REFERENCES clients(client_id)  ON DELETE NO ACTION,
+                             FOREIGN KEY (case_id) REFERENCES cases(case_id)  ON DELETE NO ACTION,
                              transaction_id INT UNIQUE NOT NULL CHECK ( transaction_id >= 0 ),
                              amount INT NOT NULL CHECK ( amount > 0 ),
                              bank_account_id INT NOT NULL,
@@ -55,8 +59,8 @@ CREATE TABLE transactions(
 
 CREATE TABLE clients_cases(
                       PRIMARY KEY (client_id, case_id),
-                      FOREIGN KEY (client_id) REFERENCES clients(client_id),
-                      FOREIGN KEY (case_id) REFERENCES cases(case_id),
+                      FOREIGN KEY (client_id) REFERENCES clients(client_id)  ON DELETE NO ACTION,
+                      FOREIGN KEY (case_id) REFERENCES cases(case_id)  ON DELETE NO ACTION,
                       client_id INT NOT NULL CHECK ( client_id >= 0 ),
                       case_id INT NOT NULL CHECK ( case_id >= 0 )
 );
@@ -99,31 +103,31 @@ INSERT INTO lawyers (lawyer_id, lawyer_name, lawyer_age, lawyer_firm_id) VALUES
 (91, 'Lomova Tatiana', 42, 5);
 
 INSERT INTO clients (client_id, client_name, client_age) VALUES
-(11, 'Komkov Valery', 45),
-(12, 'Leonova Daria', 24),
-(13, 'Stravinsky Georgiy', 71),
-(14, 'Stravinskaya Julia', 69),
-(15, 'Golovachyova Elena', 31);
+(nextval('clientsCT'), 'Komkov Valery', 45),
+(nextval('clientsCT'), 'Leonova Daria', 24),
+(nextval('clientsCT'), 'Stravinsky Georgiy', 71),
+(nextval('clientsCT'), 'Stravinskaya Julia', 69),
+(nextval('clientsCT'), 'Golovachyova Elena', 31);
 
-INSERT INTO cases (case_id, case_lawyer_id, case_cost, case_status) VALUES
-(1, 3, 150000, true),
-(2, 4, 50000, true),
-(3, 1, 200000, true),
-(4, 5, 90000, false),
-(5, 5, 15000, true);
+INSERT INTO cases (case_id, case_name, case_lawyer_id, case_cost, case_status) VALUES
+(nextval('casesCT'), 'Fraud', 3, 150000, true),
+(nextval('casesCT'), 'Theft', 4, 50000, true),
+(nextval('casesCT'), 'Divorce', 1, 200000, true),
+(nextval('casesCT'), 'Trespass', 5, 90000, false),
+(nextval('casesCT'), 'Bribery', 5, 15000, true);
 
 INSERT INTO clients_cases (client_id, case_id) VALUES
-(11, 1),
-(12, 2),
-(13, 3),
-(14, 3),
-(15, 4),
-(15, 5);
+(1, 1),
+(2, 2),
+(3, 3),
+(4, 3),
+(5, 4),
+(5, 5);
 
 INSERT INTO transactions VALUES
-(0, 1000, 1, 11, 1),
-(1, 5000, 1, 11, 1),
-(2, 25000, 1, 12, 2);
+(0, 1000, 1, 1, 1),
+(1, 5000, 1, 1, 1),
+(2, 25000, 1, 2, 2);
 
 SELECT case_id, lawyer_name -- имя юриста для конкретного дела
 FROM cases JOIN lawyers ON case_lawyer_id = lawyer_id
@@ -169,18 +173,40 @@ SELECT bank_accounts.bank_account_id, COUNT(transaction_id) -- количество транза
 FROM transactions JOIN bank_accounts ON transactions.bank_account_id = bank_accounts.bank_account_id
 GROUP BY bank_accounts.bank_account_id;
 
+-------------------------------------------------------------------------------------
+SELECT _FROM, _FROM + 1 FROM generate_series (0, 10, 1) _FROM ;
 
+
+SELECT * FROM cases WHERE case_id = 1;
+
+SELECT * FROM transactions;
+SELECT * FROM clients_cases;
+SELECT * FROM bank_accounts;
 SELECT * FROM lawyers;
 SELECT * FROM firms;
 SELECT * FROM cases;
-SELECT * FROM clients;
-SELECT * FROM bank_accounts;
-SELECT * FROM transactions;
+SELECT * FROM clients WHERE client_name LIKE ''
+    ORDER BY client_name DESC
+LIMIT 100 OFFSET 0;
 
-DROP TABLE lawyers;
-DROP TABLE firms;
-DROP TABLE cases;
-DROP TABLE clients;
-DROP TABLE bank_accounts;
+
+DROP SEQUENCE casesCT;
+DROP SEQUENCE clientsCT;
+
 DROP TABLE transactions;
 DROP TABLE clients_cases;
+DROP TABLE cases;
+DROP TABLE lawyers;
+DROP TABLE firms;
+DROP TABLE clients;
+DROP TABLE bank_accounts;
+
+DELETE FROM lawyers WHERE lawyer_id = 6;
+
+DELETE FROM cases WHERE case_id = 7 OR case_id = 6;
+
+DELETE FROM clients_cases WHERE client_id = 9 AND case_id = 8;
+DELETE FROM clients WHERE client_id = 9;
+
+SELECT nextval('casesCT');
+SELECT nextval('clientsCT');

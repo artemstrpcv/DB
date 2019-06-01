@@ -17,9 +17,16 @@ public class Frame extends JFrame {
     private Dimension frame_d;
     private ArrayList<String> titles;
     private ArrayList<String> queries;
+    private boolean updated = false;
+    private int serialNum;
+    private String caseName;
 
     private JPanel panel;
     private JPanel queriesPane;
+    private JPanel insertPane;
+    private JPanel updatePane;
+    private JPanel addClientWithCasePane;
+    private JPanel sortedFilteredPane;
     private JPanel firmsPane;
     private JPanel lawyersPane;
     private JPanel casesPane;
@@ -32,10 +39,10 @@ public class Frame extends JFrame {
         super();
 
         fillSQL();
-        frame_d = new Dimension(800, 500);
+        frame_d = new Dimension(900, 500);
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setPreferredSize(frame_d);
-        setMinimumSize(new Dimension(700, 300));
+        setMinimumSize(new Dimension(700, 450));
         setBackground(Color.white);
         setTitle("DB");
         this.setBackground(Color.white);
@@ -51,6 +58,10 @@ public class Frame extends JFrame {
         configureMenu();
         configureWorkingArea();
         configureQueriesTab();
+        configureInsertTab();
+        configureUpdateTab();
+        configureAddTab();
+        configureSfTab();
         configureFirmsTab();
         configureLawyersTab();
         configureCasesTab();
@@ -84,6 +95,10 @@ public class Frame extends JFrame {
     private void configureWorkingArea() {
         final JTabbedPane tabbedPane = new JTabbedPane();
         queriesPane = new JPanel();
+        insertPane = new JPanel();
+        updatePane = new JPanel();
+        addClientWithCasePane = new JPanel();
+        sortedFilteredPane = new JPanel();
         firmsPane = new JPanel();
         lawyersPane = new JPanel();
         casesPane = new JPanel();
@@ -92,6 +107,10 @@ public class Frame extends JFrame {
         bankAccountsPane = new JPanel();
         transactionsPane = new JPanel();
         tabbedPane.addTab("Queries", queriesPane);
+        tabbedPane.addTab("Insert", insertPane);
+        tabbedPane.addTab("Update", updatePane);
+        tabbedPane.addTab("Add Client with Case", addClientWithCasePane);
+        tabbedPane.addTab("S-F", sortedFilteredPane);
         tabbedPane.addTab("Firms", firmsPane);
         tabbedPane.addTab("Lawyers", lawyersPane);
         tabbedPane.addTab("Cases", casesPane);
@@ -225,7 +244,6 @@ public class Frame extends JFrame {
 
         lawyersNameButton.addActionListener(e -> {
             int id;
-            openChangeDialog("lawyers");
             try {
                 id = Integer.valueOf(lawyersNameField.getText());
                 if (id < 0)
@@ -358,16 +376,381 @@ public class Frame extends JFrame {
         };
     }
 
-    private void executeQuery(String query) {
+    private boolean executeQuery(String query) {
         try {
             Statement stmt = connection.createStatement();
             stmt.executeUpdate(query);
             stmt.close();
+            return true;
         }
         catch(Exception e) {
             JOptionPane.showMessageDialog(this, e.getMessage(),
                     "SQL error", JOptionPane.INFORMATION_MESSAGE);
+            return false;
         }
+    }
+
+    private int getCaseIdByName (String name) {
+        try {
+            PreparedStatement ps = connection.prepareStatement("SELECT case_id FROM cases WHERE case_name = ?");
+            ps.setString(1, name);
+            ResultSet rs = ps.executeQuery();
+            rs.next();
+            int id = rs.getInt("case_id");
+            ps.close();
+            return id;
+        }
+        catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return -1;
+    }
+
+    private void configureInsertTab() {
+        JPanel inputPane = new JPanel();
+        JButton firmsButton = new JButton("Firms");
+        JButton lawyersButton = new JButton("Lawyers");
+        JButton casesButton = new JButton("Cases");
+        JButton clientsButton = new JButton("Clients");
+        JButton clients_casesButton = new JButton("Clients-Cases");
+        JButton bankAccountsButton = new JButton("Bank Accounts");
+        JButton transactionsButton = new JButton("Transactions");
+
+        firmsButton.addActionListener(e -> openInsertDialog("firms"));
+        lawyersButton.addActionListener(e -> openInsertDialog("lawyers"));
+        casesButton.addActionListener(e -> openInsertDialog("cases"));
+        clientsButton.addActionListener(e -> openInsertDialog("clients"));
+        clients_casesButton.addActionListener(e -> openInsertDialog("clients-cases"));
+        bankAccountsButton.addActionListener(e -> openInsertDialog("bank_accounts"));
+        transactionsButton.addActionListener(e -> openInsertDialog("transactions"));
+
+        inputPane.add(firmsButton);
+        inputPane.add(lawyersButton);
+        inputPane.add(casesButton);
+        inputPane.add(clientsButton);
+        inputPane.add(clients_casesButton);
+        inputPane.add(bankAccountsButton);
+        inputPane.add(transactionsButton);
+
+        insertPane.add(Box.createRigidArea(new Dimension(100, 150)));
+        insertPane.add(inputPane);
+    }
+
+    private void configureUpdateTab() {
+        JPanel inputPane = new JPanel();
+        JButton firmsButton = new JButton("Firms");
+        JButton lawyersButton = new JButton("Lawyers");
+        JButton casesButton = new JButton("Cases");
+        JButton clientsButton = new JButton("Clients");
+        JButton clients_casesButton = new JButton("Clients-Cases");
+        JButton bankAccountsButton = new JButton("Bank Accounts");
+        JButton transactionsButton = new JButton("Transactions");
+
+        firmsButton.addActionListener(e -> openInsertDialog("firms"));
+        lawyersButton.addActionListener(e -> openInsertDialog("lawyers"));
+        casesButton.addActionListener(e -> openInsertDialog("cases"));
+        clientsButton.addActionListener(e -> openInsertDialog("clients"));
+        clients_casesButton.addActionListener(e -> openInsertDialog("clients-cases"));
+        bankAccountsButton.addActionListener(e -> openInsertDialog("bank_accounts"));
+        transactionsButton.addActionListener(e -> openInsertDialog("transactions"));
+
+        inputPane.add(firmsButton);
+        inputPane.add(lawyersButton);
+        inputPane.add(casesButton);
+        inputPane.add(clientsButton);
+        inputPane.add(clients_casesButton);
+        inputPane.add(bankAccountsButton);
+        inputPane.add(transactionsButton);
+
+        updatePane.add(Box.createRigidArea(new Dimension(100, 150)));
+        updatePane.add(inputPane);
+    }
+
+    class DemoModelItem {
+        public String objectName;
+        public DemoModelItem(String objectName){
+            this.objectName = objectName;
+        }
+
+        public String toString(){
+            return objectName;
+        }
+    }
+
+    private DefaultComboBoxModel buildComboBoxModel() {
+        DefaultComboBoxModel comboBoxModel = new DefaultComboBoxModel();
+        String SQL = "SELECT case_name from cases";
+        try {
+            PreparedStatement ps = connection.prepareStatement(SQL);
+            ResultSet rs = ps.executeQuery();
+            while(rs.next()){
+                comboBoxModel.addElement(new DemoModelItem(rs.getString("case_name")));
+            }
+            rs.close();
+            ps.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return comboBoxModel;
+    }
+
+    //а ты тэйбл там адд в панели она видно там да
+    private void configureAddTab() {
+        JPanel inputPane = new JPanel();
+        JLabel nameLabel = new JLabel("Client's Name:");
+        JTextField nameField = new JTextField("",3);
+        JLabel ageLabel = new JLabel("Client's Age:");
+        JTextField ageField = new JTextField("", 3);
+        JLabel caseLabel = new JLabel("Select Case:");
+        JComboBox caseBox = new JComboBox(buildComboBoxModel());
+        caseBox.setPreferredSize(new Dimension(88, 30));
+        ((JLabel) caseBox.getRenderer()).setHorizontalAlignment(JLabel.CENTER);
+        JButton insertButton = new JButton("Create");
+
+        nameField.addActionListener(e -> {
+            if (!nameField.getText().matches("^[ A-Za-z]+$"))
+                nameField.setText("");
+        });
+
+        ageField.addActionListener(e -> {
+            try {
+                Integer.valueOf(ageField.getText());
+            }
+            catch (NumberFormatException ex) {
+                ageField.setText("");
+            }
+        });
+
+        insertButton.addActionListener(e -> {
+            int age;
+            try {
+                if (!nameField.getText().matches("^[ A-Za-z]+$")) {
+                    JOptionPane.showMessageDialog(this, "Incorrect Name",
+                            "Input Error", JOptionPane.INFORMATION_MESSAGE);
+                    nameField.setText("");
+                }
+                else {
+                    age = Integer.valueOf(ageField.getText());
+                    if (age < 18) {
+                        JOptionPane.showMessageDialog(this, "Incorrect Age",
+                                "Input Error", JOptionPane.INFORMATION_MESSAGE);
+                        ageField.setText("");
+
+                    }
+                    else {
+                        if (caseBox.getSelectedItem() != null)
+                        {
+                            String first = "INSERT INTO clients (client_id, client_name, client_age) VALUES (nextval('clientsCT'), ?, ?);";
+                            String second = "INSERT INTO clients_cases (client_id, case_id) VALUES (currval('clientsCT'), ?);";
+                            connection.setAutoCommit(false);
+                            PreparedStatement ps1 = connection.prepareStatement(first);
+                            PreparedStatement ps2 = connection.prepareStatement(second);
+                            ps1.setString(1, nameField.getText());
+                            ps1.setInt(2, age);
+                            ps1.executeUpdate();
+                            ps2.setInt(1, getCaseIdByName(caseBox.getSelectedItem().toString()));
+                            ps2.executeUpdate();
+                            connection.commit();
+                            ps1.close();
+                            ps2.close();
+                        }
+                    }
+                }
+            }
+            catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(this, "Incorrect Age",
+                        "Input Error", JOptionPane.INFORMATION_MESSAGE);
+                ageField.setText("");
+            }
+            catch (NullPointerException eex) {
+                JOptionPane.showMessageDialog(this, "You Should Select Case ID",
+                        "Input Error", JOptionPane.INFORMATION_MESSAGE);
+            }
+            catch (SQLException ex) {
+                JOptionPane.showMessageDialog(this, ex.getMessage(),
+                        "SQL error", JOptionPane.INFORMATION_MESSAGE);
+                try {
+                    connection.rollback();
+                } catch (SQLException exc) {
+                    exc.printStackTrace();
+                    System.out.println("Rollback Error");
+                }
+            }
+            finally {
+                try {
+                    connection.setAutoCommit(true);
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                    System.out.println("Setting AutoCommit Error");
+                }
+            }
+        });
+
+        caseBox.setSelectedItem(null);
+        inputPane.add(nameLabel);
+        inputPane.add(nameField);
+        inputPane.add(ageLabel);
+        inputPane.add(ageField);
+        inputPane.add(caseLabel);
+        inputPane.add(caseBox);
+        inputPane.add(insertButton);
+
+        JPanel addCasePane = new JPanel();
+        JButton addCaseButton = new JButton("Add Case");
+        addCasePane.add(Box.createRigidArea(new Dimension(240, 30)));
+        addCasePane.add(addCaseButton);
+
+        addCaseButton.addActionListener(e -> {
+            openAddCaseDialog();
+            if (updated) {
+                //caseBox.addItem(String.valueOf(serialNum));
+                caseBox.addItem(caseName);
+                updated = false;
+            }
+        });
+
+        addClientWithCasePane.setLayout(new GridLayout(10,2));
+        addClientWithCasePane.add(inputPane, BorderLayout.CENTER);
+        addClientWithCasePane.add(addCasePane, BorderLayout.LINE_END);
+    }
+
+    private void configureSfTab() {
+        sortedFilteredPane.setLayout(new BorderLayout());
+        JPanel inputPane = new JPanel();
+        inputPane.setLayout(new BoxLayout(inputPane, BoxLayout.X_AXIS));
+        JLabel phraseLabel = new JLabel("Choose way to see table");
+        JButton showTableButton = new JButton("Show Table");
+        JLabel limitLabel = new JLabel("Limit:");
+        JLabel offsetLabel = new JLabel("Offset:");
+        JTextField limitField = new JTextField("100");
+        JTextField offsetField = new JTextField("0");
+        JButton showPagedTableButton = new JButton("Show Table with pagination");
+
+        JLabel entityLabel = new JLabel("Select entity: ");
+        JRadioButton nameRadioButton = new JRadioButton("Name");
+        JRadioButton ageRadioButton = new JRadioButton("Age");
+        ButtonGroup bg = new ButtonGroup();
+        bg.add(nameRadioButton);
+        bg.add(ageRadioButton);
+        nameRadioButton.setSelected(true);
+        ageRadioButton.setSelected(false);
+
+        JLabel nameOrderLabel = new JLabel("Select order: ");
+        JRadioButton nameOrderRadioButton = new JRadioButton("A-Z");
+        JRadioButton descNameOrderRadioButton = new JRadioButton("Z-A");
+        ButtonGroup name_bg = new ButtonGroup();
+        name_bg.add(nameOrderRadioButton);
+        name_bg.add(descNameOrderRadioButton);
+        nameOrderRadioButton.setSelected(true);
+        descNameOrderRadioButton.setSelected(false);
+
+        JLabel ageOrderLabel = new JLabel("Select order: ");
+        JRadioButton ageOrderRadioButton = new JRadioButton("Younger-Older");
+        JRadioButton descAgeOrderRadioButton = new JRadioButton("Older-Younger");
+        ButtonGroup age_bg = new ButtonGroup();
+        age_bg.add(ageOrderRadioButton);
+        age_bg.add(descAgeOrderRadioButton);
+        ageOrderRadioButton.setSelected(true);
+        descAgeOrderRadioButton.setSelected(false);
+
+        JLabel filterLabel = new JLabel("Enter filter: ");
+        JTextField filterField = new JTextField("%", 10);
+        filterField.setHorizontalAlignment(JTextField.CENTER);
+
+        JPanel sfPane = new JPanel();
+        sfPane.add(entityLabel);
+        sfPane.add(nameRadioButton);
+        sfPane.add(ageRadioButton);
+        //sfPane.add(new JSeparator(/*SwingConstants.VERTICAL*/));
+        sfPane.add(nameOrderLabel);
+        sfPane.add(nameOrderRadioButton);
+        sfPane.add(descNameOrderRadioButton);
+        sfPane.add(ageOrderLabel);
+        sfPane.add(ageOrderRadioButton);
+        sfPane.add(descAgeOrderRadioButton);
+        sfPane.add(filterLabel);
+        sfPane.add(filterField);
+
+        inputPane.add(phraseLabel);
+        inputPane.add(Box.createRigidArea(new Dimension(10, 0)));
+        inputPane.add(showTableButton);
+        inputPane.add(Box.createRigidArea(new Dimension(20, 0)));
+        inputPane.add(limitLabel);
+        inputPane.add(limitField);
+        inputPane.add(Box.createRigidArea(new Dimension(10, 0)));
+        inputPane.add(offsetLabel);
+        inputPane.add(offsetField);
+        inputPane.add(Box.createRigidArea(new Dimension(10, 0)));
+        inputPane.add(showPagedTableButton);
+
+
+        final JScrollPane[] scrollPane = new JScrollPane[1];
+        showTableButton.addActionListener(e -> {
+            String filter = filterField.getText();
+            String sort;
+            if (nameRadioButton.isSelected()) {
+                filter = "WHERE client_name LIKE '" + filter + "' ";
+                if (nameOrderRadioButton.isSelected())
+                    sort = "ORDER BY client_name ";
+                else sort = "ORDER BY client_name DESC ";
+            }
+            else {
+                //filter = "WHERE client_age LIKE '" + filter + "' ";
+                filter = "";
+                if (ageOrderRadioButton.isSelected())
+                    sort = "ORDER BY client_age ";
+                else sort = "ORDER BY client_age DESC ";
+            }
+            //System.out.println("clients " + filter + sort);
+            JTable table = new JTable(getSelectTable("clients " + filter
+                    + sort));
+            if (sortedFilteredPane.getComponentCount() != 2)
+                sortedFilteredPane.remove(scrollPane[0]);
+            scrollPane[0] = new JScrollPane(table);
+            sortedFilteredPane.add(scrollPane[0], BorderLayout.CENTER);
+            sortedFilteredPane.revalidate();
+
+        });
+        showPagedTableButton.addActionListener(e -> {
+            int limit, offset;
+            try {
+                limit = Integer.valueOf(limitField.getText());
+                offset = Integer.valueOf(offsetField.getText());
+
+                if (limit < 0 || limit > 10000)
+                    limit = 100;
+                if (offset < 0 || offset > 10000)
+                    offset = 0;
+            } catch (NumberFormatException ex) {
+                limit = 100;
+                offset = 0;
+            }
+            String filter = filterField.getText();
+            String sort;
+            if (nameRadioButton.isSelected()) {
+                filter = "WHERE client_name LIKE '" + filter + "' ";
+                if (nameOrderRadioButton.isSelected())
+                    sort = "ORDER BY client_name ";
+                else sort = "ORDER BY client_name DESC ";
+            }
+            else {
+                //filter = "WHERE client_age LIKE '" + filter + "' ";
+                filter = "";
+                if (ageOrderRadioButton.isSelected())
+                    sort = "ORDER BY client_age ";
+                else sort = "ORDER BY client_age DESC ";
+            }
+            JTable table = new JTable(getSelectTable("clients " + filter
+                     + sort + "LIMIT " +  limit + " OFFSET " + offset));
+            if (sortedFilteredPane.getComponentCount() != 2)
+                sortedFilteredPane.remove(scrollPane[0]);
+            scrollPane[0] = new JScrollPane(table);
+            sortedFilteredPane.add(scrollPane[0], BorderLayout.CENTER);
+            sortedFilteredPane.revalidate();
+
+        });
+        sortedFilteredPane.add(inputPane, BorderLayout.PAGE_START);
+        sortedFilteredPane.add(sfPane, BorderLayout.AFTER_LAST_LINE);
     }
 
     private void configureFirmsTab() {
@@ -906,12 +1289,104 @@ public class Frame extends JFrame {
         queryDialog.setVisible(true);
     }
 
-    private void openChangeDialog(String table_name) {
-        JDialog changeDialog = new JDialog();
-        changeDialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-        changeDialog.setTitle("Insert-Update-Delete");
-        changeDialog.setModal(true);
-        changeDialog.setPreferredSize(new Dimension(600, 300));
+    private void openAddCaseDialog() {
+        JDialog addCaseDialog = new JDialog();
+        addCaseDialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+        addCaseDialog.setTitle("Add New Case");
+        addCaseDialog.setModal(true);
+        addCaseDialog.setPreferredSize(new Dimension(600, 200));
+
+        JPanel mainPane = new JPanel();
+        mainPane.setLayout(new BorderLayout());
+        JPanel inputPane = new JPanel();
+        inputPane.setLayout(new BoxLayout(inputPane, BoxLayout.X_AXIS));
+
+        ArrayList<JLabel> labels = new ArrayList<>();
+        ArrayList<JTextField> textFields = new ArrayList<>();
+        Vector<Object> columnNames = new Vector<>();
+
+        try {
+            Statement stmt = connection.createStatement();
+            ResultSet rs = stmt.executeQuery("SELECT * FROM cases LIMIT 0");
+            ResultSetMetaData md = rs.getMetaData();
+            int columns = md.getColumnCount();
+
+            for (int i = 1; i <= columns; i++) {
+                columnNames.addElement(md.getColumnName(i));
+            }
+
+            rs.close();
+            stmt.close();
+        }
+        catch(Exception e) {
+            //System.out.println(e);
+            e.printStackTrace();
+        }
+
+        for (int i = 1; i < columnNames.size(); i++) {
+            labels.add(new JLabel(columnNames.get(i).toString() + ":"));
+            inputPane.add(labels.get(i - 1));
+            textFields.add(new JTextField(""));
+            inputPane.add(textFields.get(i - 1));
+        }
+
+        textFields.get(3).setText("true");
+
+        JButton insertButton = new JButton("Add");
+
+        insertButton.addActionListener(e -> {
+            try {
+                String query = "INSERT INTO cases (";
+                for (int i = 0; i < columnNames.size() - 1; i++) {
+                    query = query.concat(columnNames.get(i).toString() + ",");
+                }
+                query = query.concat(columnNames.get(columnNames.size() - 1).toString() + ") VALUES (nextval('casesCT'),");
+                for (int i = 0; i < textFields.size() - 1; i++) {
+                    query = query.concat("'" + textFields.get(i).getText() + "',");
+                }
+                query = query.concat("'" + textFields.get(textFields.size() - 1).getText() + "')");
+
+                if (executeQuery(query))
+                {
+                    updated = true;
+                    try {
+                        Statement numStmt = connection.createStatement();
+                        String num = "SELECT currval('casesCT')";
+                        ResultSet res = numStmt.executeQuery(num);
+                        if (res.next()) {
+                            serialNum = res.getInt(1);
+                            caseName = textFields.get(0).getText();
+                            //System.out.println("serialNum = " + serialNum);
+                        }
+                        numStmt.close();
+                    }
+                    catch (SQLException exep) {
+                        exep.printStackTrace();
+                    }
+                }
+                //System.out.println(query);
+                addCaseDialog.dispose();
+            }
+            catch (NumberFormatException ex) {
+                ex.printStackTrace();
+            }
+        });
+
+        inputPane.add(insertButton);
+
+        mainPane.add(inputPane, BorderLayout.NORTH);
+        addCaseDialog.add(mainPane);
+        addCaseDialog.pack();
+        addCaseDialog.setLocationRelativeTo(this);
+        addCaseDialog.setVisible(true);
+    }
+
+    private void openInsertDialog(String table_name) {
+        JDialog insertDialog = new JDialog();
+        insertDialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+        insertDialog.setTitle("Insert");
+        insertDialog.setModal(true);
+        insertDialog.setPreferredSize(new Dimension(800, 200));
 
         JPanel mainPane = new JPanel();
         mainPane.setLayout(new BorderLayout());
@@ -948,8 +1423,8 @@ public class Frame extends JFrame {
         }
 
         JButton insertButton = new JButton("Insert");
-        JButton updateButton = new JButton("Update");
-        JButton deleteButton = new JButton("Delete");
+        //JButton updateButton = new JButton("Update");
+        //JButton deleteButton = new JButton("Delete");
 
         insertButton.addActionListener(e -> {
             try {
@@ -962,8 +1437,9 @@ public class Frame extends JFrame {
                     query = query.concat("'" + textFields.get(i).getText() + "',");
                 }
                 query = query.concat("'" + textFields.get(textFields.size() - 1).getText() + "')");
-                System.out.println(query);
-                executeQuery(query);
+
+                if (executeQuery(query))
+                    insertDialog.dispose();
             }
             catch (NumberFormatException ex) {
                 ex.printStackTrace();
@@ -971,15 +1447,87 @@ public class Frame extends JFrame {
         });
 
         inputPane.add(insertButton);
-        inputPane.add(updateButton);
-        inputPane.add(deleteButton);
+        //inputPane.add(updateButton);
+        //inputPane.add(deleteButton);
 
         mainPane.add(inputPane, BorderLayout.NORTH);
-        changeDialog.add(mainPane);
-        changeDialog.pack();
-        changeDialog.setLocationRelativeTo(this);
-        changeDialog.setVisible(true);
+        insertDialog.add(mainPane);
+        insertDialog.pack();
+        insertDialog.setLocationRelativeTo(this);
+        insertDialog.setVisible(true);
     }
+
+    /*private void openUpdateFirmsDialog() {
+        JDialog updateFirmsDialog = new JDialog();
+        updateFirmsDialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+        updateFirmsDialog.setTitle("Insert");
+        updateFirmsDialog.setModal(true);
+        updateFirmsDialog.setPreferredSize(new Dimension(800, 200));
+
+        JPanel mainPane = new JPanel();
+        mainPane.setLayout(new BorderLayout());
+        JPanel inputPane = new JPanel();
+        inputPane.setLayout(new BoxLayout(inputPane, BoxLayout.X_AXIS));
+
+        ArrayList<JLabel> labels = new ArrayList<>();
+        ArrayList<JTextField> textFields = new ArrayList<>();
+        Vector<Object> columnNames = new Vector<>();
+
+        try {
+            Statement stmt = connection.createStatement();
+            ResultSet rs = stmt.executeQuery("SELECT * FROM " + table_name + " LIMIT 0");
+            ResultSetMetaData md = rs.getMetaData();
+            int columns = md.getColumnCount();
+
+            for (int i = 1; i <= columns; i++) {
+                columnNames.addElement(md.getColumnName(i));
+            }
+
+            rs.close();
+            stmt.close();
+        }
+        catch(Exception e) {
+            //System.out.println(e);
+            e.printStackTrace();
+        }
+
+        for (int i = 0; i < columnNames.size(); i++) {
+            labels.add(new JLabel(columnNames.get(i).toString() + ":"));
+            inputPane.add(labels.get(i));
+            textFields.add(new JTextField(""));
+            inputPane.add(textFields.get(i));
+        }
+
+        JButton updateButton = new JButton("Update");
+
+        updateButton.addActionListener(e -> {
+            try {
+                String query = "INSERT INTO " + table_name + " (";
+                for (int i = 0; i < columnNames.size() - 1; i++) {
+                    query = query.concat(columnNames.get(i).toString() + ",");
+                }
+                query = query.concat(columnNames.get(columnNames.size() - 1).toString() + ") VALUES (");
+                for (int i = 0; i < textFields.size() - 1; i++) {
+                    query = query.concat("'" + textFields.get(i).getText() + "',");
+                }
+                query = query.concat("'" + textFields.get(textFields.size() - 1).getText() + "')");
+
+                if (executeQuery(query))
+                    updateFirmsDialog.dispose();
+            }
+            catch (NumberFormatException ex) {
+                ex.printStackTrace();
+            }
+        });
+
+        inputPane.add(updateButton);
+
+        mainPane.add(inputPane, BorderLayout.NORTH);
+        updateFirmsDialog.add(mainPane);
+        updateFirmsDialog.pack();
+        updateFirmsDialog.setLocationRelativeTo(this);
+        updateFirmsDialog.setVisible(true);
+    }*/
 
     private void fillSQL() {
         titles = new ArrayList<>();
@@ -1032,204 +1580,11 @@ public class Frame extends JFrame {
 }
 
 /*
-    private void configureToolbar() {
-        jToolBar = new JToolBar();
-        jToolBar.setFloatable(false);
-
-        openButton = new JButton(new ImageIcon(ClassLoader.getSystemResource("open.png")));
-        {
-            openButton.setBorderPainted(false);
-            openButton.setFocusPainted(false);
-            openButton.setToolTipText("Press To Open Config");
-            openButton.addActionListener(e -> {
-                    controller.loadConfig();
-                }
-
-                @Override
-                public void mousePressed(MouseEvent e) {
-
-                }
-
-                @Override
-                public void mouseReleased(MouseEvent e) {
-
-                }
-
-                @Override
-                public void mouseEntered(MouseEvent e) {
-                    statusBar.setStatus("Press To Open Config");
-                }
-
-                @Override
-                public void mouseExited(MouseEvent e) {
-                    statusBar.setStatus("");
-                }
-            });
-            jToolBar.add(openButton);
-        }
-
-        configurationsButton = new JButton(new ImageIcon(ClassLoader.getSystemResource("configurations.png")));
-        {
-            configurationsButton.setBorderPainted(false);
-            configurationsButton.setFocusPainted(false);
-            configurationsButton.setToolTipText("Press To Change Configurations");
-            configurationsButton.addActionListener(e -> {
-                    openConfigurationDialog();
-                }
-
-                @Override
-                public void mousePressed(MouseEvent e) {
-
-                }
-
-                @Override
-                public void mouseReleased(MouseEvent e) {
-
-                }
-
-                @Override
-                public void mouseEntered(MouseEvent e) {
-                    statusBar.setStatus("Press To Change Configurations");
-                }
-
-                @Override
-                public void mouseExited(MouseEvent e) {
-                    statusBar.setStatus("");
-                }
-            });
-            jToolBar.add(configurationsButton);
-        }
-        add(jToolBar, BorderLayout.NORTH);
-    }
- */
-
-/*@SuppressWarnings("Duplicates")
-    private void openConfigurationDialog() {
-        JDialog configurationDialog = new JDialog();
-        configurationDialog.setResizable(false);
-        configurationDialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-        configurationDialog.setTitle("Configurations");
-        configurationDialog.setModal(true);
-
-        JButton okButton = new JButton("OK");
-        JButton cancelButton = new JButton("Cancel");
-
-        JPanel exitPanel = new JPanel();
-        exitPanel.add(Box.createRigidArea(new Dimension(50, 0)));
-        exitPanel.add(cancelButton);
-        exitPanel.add(Box.createRigidArea(new Dimension(5, 0)));
-        exitPanel.add(okButton);
-        exitPanel.setLayout(new BoxLayout(exitPanel, BoxLayout.X_AXIS));
-
-        Config config = controller.getConfig();
-
-        JLabel aLabel = new JLabel("a:");
-        JLabel bLabel = new JLabel("b:");
-        JLabel cLabel = new JLabel("c:");
-        JLabel dLabel = new JLabel("d:");
-
-        JTextField aTextField = new JTextField(String.valueOf(config.getA()));
-        JTextField bTextField = new JTextField(String.valueOf(config.getB()));
-        JTextField cTextField = new JTextField(String.valueOf(config.getC()));
-        JTextField dTextField = new JTextField(String.valueOf(config.getD()));
-        aTextField.setHorizontalAlignment(JTextField.CENTER);
-        bTextField.setHorizontalAlignment(JTextField.CENTER);
-        cTextField.setHorizontalAlignment(JTextField.CENTER);
-        dTextField.setHorizontalAlignment(JTextField.CENTER);
-
-        JPanel domainPanel = new JPanel();
-        domainPanel.setPreferredSize(new Dimension(200, 50));
-        domainPanel.setLayout(new BoxLayout(domainPanel, BoxLayout.X_AXIS));
-        domainPanel.add(aLabel);
-        domainPanel.add(aTextField);
-        domainPanel.add(Box.createRigidArea(new Dimension(5, 0)));
-        domainPanel.add(bLabel);
-        domainPanel.add(bTextField);
-        domainPanel.add(Box.createRigidArea(new Dimension(5, 0)));
-        domainPanel.add(cLabel);
-        domainPanel.add(cTextField);
-        domainPanel.add(Box.createRigidArea(new Dimension(5, 0)));
-        domainPanel.add(dLabel);
-        domainPanel.add(dTextField);
-        domainPanel.setBorder(new TitledBorder("Domain"));
-
-        JLabel kLabel = new JLabel("k:");
-        JLabel mLabel = new JLabel("m:");
-
-        JTextField kTextField = new JTextField(String.valueOf(config.getK()));
-        JTextField mTextField = new JTextField(String.valueOf(config.getM()));
-        kTextField.setHorizontalAlignment(JTextField.CENTER);
-        mTextField.setHorizontalAlignment(JTextField.CENTER);
-
-
-        JPanel gridPanel = new JPanel();
-        gridPanel.setPreferredSize(new Dimension(100, 50));
-        gridPanel.setLayout(new BoxLayout(gridPanel, BoxLayout.X_AXIS));
-        gridPanel.add(kLabel);
-        gridPanel.add(kTextField);
-        gridPanel.add(Box.createRigidArea(new Dimension(5, 0)));
-        gridPanel.add(mLabel);
-        gridPanel.add(mTextField);
-        gridPanel.setBorder(new TitledBorder("Grid Size"));
-
-
-        JPanel configurationPanel = new JPanel();
-        configurationPanel.setPreferredSize(new Dimension(200, 150));
-        //configurationPanel.setLayout(new BoxLayout(configurationPanel, BoxLayout.Y_AXIS));
-        configurationPanel.add(domainPanel);
-        configurationPanel.add(gridPanel);
-        configurationPanel.add(exitPanel);
-
-        cancelButton.addActionListener(e -> configurationDialog.dispose());
-        okButton.addActionListener(e -> {
-            double newA, newB, newC, newD;
-            int newK, newM;
-            try {
-                newA = Double.valueOf(aTextField.getText());
-                newB = Double.valueOf(bTextField.getText());
-                newC = Double.valueOf(cTextField.getText());
-                newD = Double.valueOf(dTextField.getText());
-
-                newK = Integer.valueOf(kTextField.getText());
-                newM = Integer.valueOf(mTextField.getText());
-
-                if (newK < 0 || newK > 100)
-                    newK = config.getK();
-                if (newM < 0 || newM > 100)
-                    newM = config.getM();
-            } catch (NumberFormatException ex) {
-                newA = config.getA();
-                newB = config.getB();
-                newC = config.getC();
-                newD = config.getD();
-
-                newK = config.getK();
-                newM = config.getM();
-            }
-
-            if (newA != config.getA() || newB != config.getB() || newC != config.getC() || newD != config.getD()
-                    || newK != config.getK() || newM != config.getM()) {
-                config.setA(newA);
-                config.setB(newB);
-                config.setC(newC);
-                config.setD(newD);
-                config.setK(newK);
-                config.setM(newM);
-                controller.refresh();
-                gridButton.setSelected(false);
-                gridMenuItem.setSelected(false);
-                keyIsolinesButton.setSelected(false);
-                keyIsolinesMenuItem.setSelected(false);
-                userIsolinesButton.setSelected(true);
-                userIsolinesMenuItem.setSelected(true);
-                interpolateButton.setSelected(false);
-                interpolateMenuItem.setSelected(false);
-            }
-            configurationDialog.dispose();
-        });
-
-        configurationDialog.add(configurationPanel);
-        configurationDialog.pack();
-        configurationDialog.setLocationRelativeTo(this);
-        configurationDialog.setVisible(true);
-    }*/
+                            String selectedCase = caseBox.getSelectedItem().toString();
+                            String query = "BEGIN;\n" +
+                                    "INSERT INTO clients (client_id, client_name, client_age) VALUES\n" +
+          *//*prepared statement*//*                          "(nextval('clientsCT'), '" + nameField.getText() +"', " + age +");\n" +
+                                    "INSERT INTO clients_cases (client_id, case_id) VALUES (currval('clientsCT'), "
+                                    + selectedCase +");\n" +
+                                    "COMMIT;";
+                            executeQuery(query);*/
