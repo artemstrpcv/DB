@@ -38,7 +38,7 @@ CREATE TABLE cases(
                       PRIMARY KEY (case_id),
                       FOREIGN KEY (case_lawyer_id) REFERENCES lawyers(lawyer_id)  ON DELETE NO ACTION,
                       case_id INT UNIQUE NOT NULL CHECK ( case_id >= 0 ),
-                      case_name VARCHAR(100) NOT NULL,
+                      case_name VARCHAR(100) UNIQUE NOT NULL,
                       case_lawyer_id INT NOT NULL,
                       case_cost INT NOT NULL,
                       case_status BOOLEAN NOT NULL
@@ -174,7 +174,7 @@ FROM transactions JOIN bank_accounts ON transactions.bank_account_id = bank_acco
 GROUP BY bank_accounts.bank_account_id;
 
 -------------------------------------------------------------------------------------
-SELECT _FROM, _FROM + 1 FROM generate_series (0, 10, 1) _FROM ;
+SELECT _FROM, _FROM + 1 FROM generate_series (0, 10, 1) _FROM;
 
 
 SELECT * FROM cases WHERE case_id = 1;
@@ -206,7 +206,14 @@ DELETE FROM lawyers WHERE lawyer_id = 6;
 DELETE FROM cases WHERE case_id = 7 OR case_id = 6;
 
 DELETE FROM clients_cases WHERE client_id = 9 AND case_id = 8;
-DELETE FROM clients WHERE client_id = 9;
+DELETE FROM clients WHERE client_id = 6;
+SELECT case_id FROM cases WHERE case_name = 'Theft';
+
+UPDATE firms SET firm_profit = '500000' WHERE firm_id = '5';
+
+SELECT * FROM cases WHERE case_cost > (SELECT AVG(case_cost) FROM cases);
+
+UPDATE cases SET case_cost = case_cost - 10;
 
 SELECT nextval('casesCT');
 SELECT nextval('clientsCT');

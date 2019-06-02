@@ -1,7 +1,9 @@
 package main.java.ru.nsu.fit.g16202.stryapchev.view;
 
 import main.java.ru.nsu.fit.g16202.stryapchev.controller.Database;
+import sun.management.snmp.jvminstr.JvmThreadInstanceEntryImpl;
 
+import javax.jnlp.JNLPRandomAccessFile;
 import javax.swing.*;
 import java.awt.*;
 import java.sql.*;
@@ -39,7 +41,7 @@ public class Frame extends JFrame {
         super();
 
         fillSQL();
-        frame_d = new Dimension(900, 500);
+        frame_d = new Dimension(950, 500);
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setPreferredSize(frame_d);
         setMinimumSize(new Dimension(700, 450));
@@ -219,6 +221,15 @@ public class Frame extends JFrame {
         transCountOnBankQueryPane.add(Box.createRigidArea(new Dimension(10, 0)));
         transCountOnBankQueryPane.add(transCountOnBankButton);
 
+        JPanel subQueryPane = new JPanel();
+        subQueryPane.setLayout(new BoxLayout(subQueryPane, BoxLayout.X_AXIS));
+        subQueryPane.setAlignmentX(JScrollPane.LEFT_ALIGNMENT);
+        JLabel subQueryLabel = new JLabel("Show Cases More Expensive Than Average:");
+        JButton subQueryButton = new JButton("Perform");
+        subQueryPane.add(subQueryLabel);
+        subQueryPane.add(Box.createRigidArea(new Dimension(10, 0)));
+        subQueryPane.add(subQueryButton);
+
         verticalPane.add(Box.createRigidArea(new Dimension(0, 10)));
         verticalPane.add(lawyersNameQueryPane, BorderLayout.WEST);
         verticalPane.add(Box.createRigidArea(new Dimension(0, 10)));
@@ -239,6 +250,8 @@ public class Frame extends JFrame {
         verticalPane.add(paidSumForClientsQueryPane, BorderLayout.WEST);
         verticalPane.add(Box.createRigidArea(new Dimension(0, 10)));
         verticalPane.add(transCountOnBankQueryPane, BorderLayout.WEST);
+        verticalPane.add(Box.createRigidArea(new Dimension(0, 10)));
+        verticalPane.add(subQueryPane, BorderLayout.WEST);
         queriesPane.add(verticalPane, BorderLayout.WEST);
 
 
@@ -263,6 +276,7 @@ public class Frame extends JFrame {
         unpaidCasesButton.addActionListener(e -> openQueryDialog(7));
         paidSumForClientsButton.addActionListener(e -> openQueryDialog(8));
         transCountOnBankButton.addActionListener(e -> openQueryDialog(9));
+        subQueryButton.addActionListener(e -> openQueryDialog(10));
     }
 
     private DefaultTableModel getSelectTable(String table_name) {
@@ -415,14 +429,16 @@ public class Frame extends JFrame {
         JButton clients_casesButton = new JButton("Clients-Cases");
         JButton bankAccountsButton = new JButton("Bank Accounts");
         JButton transactionsButton = new JButton("Transactions");
+        JButton batchInsertTransactionsButton = new JButton("Batch Insert Transactions");
 
         firmsButton.addActionListener(e -> openInsertDialog("firms"));
         lawyersButton.addActionListener(e -> openInsertDialog("lawyers"));
         casesButton.addActionListener(e -> openInsertDialog("cases"));
         clientsButton.addActionListener(e -> openInsertDialog("clients"));
-        clients_casesButton.addActionListener(e -> openInsertDialog("clients-cases"));
+        clients_casesButton.addActionListener(e -> openInsertDialog("clients_cases"));
         bankAccountsButton.addActionListener(e -> openInsertDialog("bank_accounts"));
         transactionsButton.addActionListener(e -> openInsertDialog("transactions"));
+        batchInsertTransactionsButton.addActionListener(e -> transactionsBatchInsert());
 
         inputPane.add(firmsButton);
         inputPane.add(lawyersButton);
@@ -431,9 +447,94 @@ public class Frame extends JFrame {
         inputPane.add(clients_casesButton);
         inputPane.add(bankAccountsButton);
         inputPane.add(transactionsButton);
+        inputPane.add(batchInsertTransactionsButton);
 
         insertPane.add(Box.createRigidArea(new Dimension(100, 150)));
         insertPane.add(inputPane);
+    }
+
+    private void transactionsBatchInsert() {
+        try {
+            connection.setAutoCommit(false);
+            String insert_query = "INSERT INTO transactions VALUES (?, ?, ?, ?, ?)";
+            PreparedStatement pst = connection.prepareStatement(insert_query);
+            pst.setInt(1, 0);
+            pst.setInt(2, 1000);
+            pst.setInt(3, 1);
+            pst.setInt(4, 1);
+            pst.setInt(5, 1);
+            pst.addBatch();
+
+            pst.setInt(1, 1);
+            pst.setInt(2, 5000);
+            pst.setInt(3, 1);
+            pst.setInt(4, 1);
+            pst.setInt(5, 1);
+            pst.addBatch();
+
+            pst.setInt(1, 2);
+            pst.setInt(2, 25000);
+            pst.setInt(3, 1);
+            pst.setInt(4, 2);
+            pst.setInt(5, 2);
+            pst.addBatch();
+
+            /*int[] count = */pst.executeBatch();
+            connection.commit();
+        }
+        catch (SQLException ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage(),
+                    "SQL error", JOptionPane.INFORMATION_MESSAGE);
+            try {
+                connection.rollback();
+            } catch (SQLException exc) {
+                exc.printStackTrace();
+                System.out.println("Rollback Error");
+            }
+        }
+        finally {
+            try {
+                connection.setAutoCommit(true);
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void transactionsBatchDelete() {
+        try {
+            connection.setAutoCommit(false);
+            String insert_query = "DELETE FROM transactions WHERE transaction_id = ?";
+            PreparedStatement pst = connection.prepareStatement(insert_query);
+            pst.setInt(1, 0);
+            pst.addBatch();
+
+            pst.setInt(1, 1);
+            pst.addBatch();
+
+            pst.setInt(1, 2);
+            pst.addBatch();
+
+            /*int[] count = */pst.executeBatch();
+            connection.commit();
+        }
+        catch (SQLException ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage(),
+                    "SQL error", JOptionPane.INFORMATION_MESSAGE);
+            try {
+                connection.rollback();
+            } catch (SQLException exc) {
+                exc.printStackTrace();
+                System.out.println("Rollback Error");
+            }
+        }
+        finally {
+            try {
+                connection.setAutoCommit(true);
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     private void configureUpdateTab() {
@@ -442,25 +543,25 @@ public class Frame extends JFrame {
         JButton lawyersButton = new JButton("Lawyers");
         JButton casesButton = new JButton("Cases");
         JButton clientsButton = new JButton("Clients");
-        JButton clients_casesButton = new JButton("Clients-Cases");
         JButton bankAccountsButton = new JButton("Bank Accounts");
         JButton transactionsButton = new JButton("Transactions");
+        JButton batchDeleteTransactionsButton = new JButton("Batch Delete Transactions");
 
-        firmsButton.addActionListener(e -> openInsertDialog("firms"));
-        lawyersButton.addActionListener(e -> openInsertDialog("lawyers"));
-        casesButton.addActionListener(e -> openInsertDialog("cases"));
-        clientsButton.addActionListener(e -> openInsertDialog("clients"));
-        clients_casesButton.addActionListener(e -> openInsertDialog("clients-cases"));
-        bankAccountsButton.addActionListener(e -> openInsertDialog("bank_accounts"));
-        transactionsButton.addActionListener(e -> openInsertDialog("transactions"));
+        firmsButton.addActionListener(e -> openUpdateDialog("firms", "firm_id", "firm_profit"));
+        lawyersButton.addActionListener(e -> openUpdateDialog("lawyers", "lawyer_id", "lawyer_age"));
+        casesButton.addActionListener(e -> openUpdateDialog("cases", "case_id", "case_cost"));
+        clientsButton.addActionListener(e -> openUpdateDialog("clients", "client_id", "client_age"));
+        bankAccountsButton.addActionListener(e -> openUpdateDialog("bank_accounts", "bank_account_id", "bank_account_balance"));
+        transactionsButton.addActionListener(e -> openUpdateDialog("transactions", "transaction_id", "amount"));
+        batchDeleteTransactionsButton.addActionListener(e -> transactionsBatchDelete());
 
         inputPane.add(firmsButton);
         inputPane.add(lawyersButton);
         inputPane.add(casesButton);
         inputPane.add(clientsButton);
-        inputPane.add(clients_casesButton);
         inputPane.add(bankAccountsButton);
         inputPane.add(transactionsButton);
+        inputPane.add(batchDeleteTransactionsButton);
 
         updatePane.add(Box.createRigidArea(new Dimension(100, 150)));
         updatePane.add(inputPane);
@@ -1457,77 +1558,75 @@ public class Frame extends JFrame {
         insertDialog.setVisible(true);
     }
 
-    /*private void openUpdateFirmsDialog() {
-        JDialog updateFirmsDialog = new JDialog();
-        updateFirmsDialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-        updateFirmsDialog.setTitle("Insert");
-        updateFirmsDialog.setModal(true);
-        updateFirmsDialog.setPreferredSize(new Dimension(800, 200));
+    private DefaultComboBoxModel buildComboBoxModelUpdate(String table_name, String id_field) {
+        DefaultComboBoxModel comboBoxModel = new DefaultComboBoxModel();
+        String SQL = "SELECT " + id_field + " FROM " + table_name;
+        try {
+            PreparedStatement ps = connection.prepareStatement(SQL);
+            ResultSet rs = ps.executeQuery();
+            while(rs.next()){
+                comboBoxModel.addElement(new DemoModelItem(rs.getString(id_field)));
+            }
+            rs.close();
+            ps.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return comboBoxModel;
+    }
+
+    private void openUpdateDialog(String table_name, String id_str, String update_str) {
+        JDialog updateDialog = new JDialog();
+        updateDialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+        updateDialog.setTitle("Update " + table_name);
+        updateDialog.setModal(true);
+        updateDialog.setPreferredSize(new Dimension(400, 150));
+        if (table_name.equals("bank_accounts"))
+            updateDialog.setPreferredSize(new Dimension(500, 150));
 
         JPanel mainPane = new JPanel();
         mainPane.setLayout(new BorderLayout());
         JPanel inputPane = new JPanel();
         inputPane.setLayout(new BoxLayout(inputPane, BoxLayout.X_AXIS));
 
-        ArrayList<JLabel> labels = new ArrayList<>();
-        ArrayList<JTextField> textFields = new ArrayList<>();
-        Vector<Object> columnNames = new Vector<>();
-
-        try {
-            Statement stmt = connection.createStatement();
-            ResultSet rs = stmt.executeQuery("SELECT * FROM " + table_name + " LIMIT 0");
-            ResultSetMetaData md = rs.getMetaData();
-            int columns = md.getColumnCount();
-
-            for (int i = 1; i <= columns; i++) {
-                columnNames.addElement(md.getColumnName(i));
-            }
-
-            rs.close();
-            stmt.close();
-        }
-        catch(Exception e) {
-            //System.out.println(e);
-            e.printStackTrace();
-        }
-
-        for (int i = 0; i < columnNames.size(); i++) {
-            labels.add(new JLabel(columnNames.get(i).toString() + ":"));
-            inputPane.add(labels.get(i));
-            textFields.add(new JTextField(""));
-            inputPane.add(textFields.get(i));
-        }
+        JLabel idLabel = new JLabel(id_str + ":");
+        JComboBox comboBox = new JComboBox(buildComboBoxModelUpdate(table_name, id_str));
+        comboBox.setPreferredSize(new Dimension(88, 30));
+        ((JLabel) comboBox.getRenderer()).setHorizontalAlignment(JLabel.CENTER);
+        JLabel changeLabel = new JLabel(update_str + ":");
+        JTextField changeField = new JTextField();
+        inputPane.add(idLabel);
+        inputPane.add(comboBox);
+        inputPane.add(Box.createRigidArea(new Dimension(20, 0)));
+        inputPane.add(changeLabel);
+        inputPane.add(changeField);
 
         JButton updateButton = new JButton("Update");
 
         updateButton.addActionListener(e -> {
+            String updateQuery = "UPDATE " + table_name + " SET " + update_str + " = ? " + "WHERE " + id_str + " = ?";
             try {
-                String query = "INSERT INTO " + table_name + " (";
-                for (int i = 0; i < columnNames.size() - 1; i++) {
-                    query = query.concat(columnNames.get(i).toString() + ",");
-                }
-                query = query.concat(columnNames.get(columnNames.size() - 1).toString() + ") VALUES (");
-                for (int i = 0; i < textFields.size() - 1; i++) {
-                    query = query.concat("'" + textFields.get(i).getText() + "',");
-                }
-                query = query.concat("'" + textFields.get(textFields.size() - 1).getText() + "')");
-
-                if (executeQuery(query))
-                    updateFirmsDialog.dispose();
+                PreparedStatement ps = connection.prepareStatement(updateQuery);
+                ps.setInt(1, Integer.parseInt(changeField.getText()));
+                ps.setInt(2, Integer.valueOf(comboBox.getSelectedItem().toString()));
+                System.out.println(ps);
+                ps.executeUpdate();
+                updateDialog.dispose();
             }
-            catch (NumberFormatException ex) {
-                ex.printStackTrace();
+            catch (SQLException exe) {
+                JOptionPane.showMessageDialog(this, exe.getMessage(),
+                        "SQL error", JOptionPane.INFORMATION_MESSAGE);
             }
         });
 
         inputPane.add(updateButton);
 
         mainPane.add(inputPane, BorderLayout.NORTH);
-        updateFirmsDialog.add(mainPane);
-        updateFirmsDialog.pack();
-        updateFirmsDialog.setLocationRelativeTo(this);
-        updateFirmsDialog.setVisible(true);
-    }*/
+        updateDialog.add(mainPane);
+        updateDialog.pack();
+        updateDialog.setLocationRelativeTo(this);
+        updateDialog.setVisible(true);
+    }
 
     private void fillSQL() {
         titles = new ArrayList<>();
@@ -1542,6 +1641,7 @@ public class Frame extends JFrame {
         titles.add("All Unpaid Cases");
         titles.add("Paid Sum For Each Client");
         titles.add("Transactions Count Sent To Bank Account");
+        titles.add("Cases More Expensive Than Average");
         queries.add("SELECT case_id, lawyer_name " +
                 "FROM cases JOIN lawyers ON case_lawyer_id = lawyer_id " +
                 "WHERE case_id = 1");
@@ -1576,6 +1676,7 @@ public class Frame extends JFrame {
         queries.add("SELECT bank_accounts.bank_account_id, COUNT(transaction_id) " +
                 "FROM transactions JOIN bank_accounts ON transactions.bank_account_id = bank_accounts.bank_account_id " +
                 "GROUP BY bank_accounts.bank_account_id");
+        queries.add("SELECT * FROM cases WHERE case_cost > (SELECT AVG(case_cost) FROM cases)");
     }
 }
 
