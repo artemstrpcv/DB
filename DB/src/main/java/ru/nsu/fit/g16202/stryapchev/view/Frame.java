@@ -1291,10 +1291,6 @@ public class Frame extends JFrame {
             String query = "SELECT case_id, lawyer_name FROM cases " +
                     "JOIN lawyers ON case_lawyer_id = lawyer_id WHERE case_id = " + id;
             rs = statement.executeQuery(query);
-            /*if (rs.isLast()) {
-                JOptionPane.showMessageDialog(this, "Wrong argument",
-                        "Error", JOptionPane.INFORMATION_MESSAGE);
-            }*/
             while (rs.next()) {
                 int case_id = rs.getInt("case_id");
                 String name = rs.getString("lawyer_name");
